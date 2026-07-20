@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Admin{% endblock %} | {{ site_settings.company_name if site_settings else "Administration" }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <aside class="sidebar">
+        <a class="admin-brand" href="{{ url_for('admin.dashboard') }}">
+            <span>EM</span>
+            {{ site_settings.company_name if site_settings else "Administration" }}
+        </a>
+
+        <nav>
+            <a href="{{ url_for('admin.dashboard') }}">
+                <i class="fas fa-chart-line"></i>
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('admin.cars') }}">
+                <i class="fas fa-car"></i>
+                Vehicles
+            </a>
+
+            <a href="{{ url_for('admin.messages') }}">
+                <i class="fas fa-envelope"></i>
+                Messages
+            </a>
+
+            <a href="{{ url_for('admin.test_drives') }}">
+                <i class="fas fa-calendar-check"></i>
+                Test Drives
+            </a>
+
+            <a href="{{ url_for('admin.team_members') }}">
+                <i class="fas fa-people-group"></i>
+                Team Members
+            </a>
+
+            <a href="{{ url_for('admin.settings') }}">
+                <i class="fas fa-gear"></i>
+                Settings
+            </a>
+
+            <a href="{{ url_for('main.index') }}">
+                <i class="fas fa-arrow-left"></i>
+                Back to Site
+            </a>
+        </nav>
+
+        <a class="logout" href="{{ url_for('admin.logout') }}">
+            <i class="fas fa-right-from-bracket"></i>
+            Logout
+        </a>
+    </aside>
+
+    <div class="admin-main">
+        <header>
+            <button class="side-toggle" type="button" aria-label="Open admin menu">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="admin-header-actions">
+                <a class="header-site-link" href="{{ url_for('main.index') }}">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Site
+                </a>
+
+                <div class="admin-user">
+                    <b>{{ current_user.username }}</b>
+                    <span>Administrator</span>
+                </div>
+
+                <a class="header-logout" href="{{ url_for('admin.logout') }}">
+                    <i class="fas fa-right-from-bracket"></i>
+                    Logout
+                </a>
+            </div>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

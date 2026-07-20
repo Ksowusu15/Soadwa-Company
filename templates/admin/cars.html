@@ -1,0 +1,121 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Vehicles{% endblock %}
+
+{% block content %}
+<div class="page-title vehicles-page-title">
+    <div>
+        <h1>Vehicles</h1>
+        <p>Manage showroom inventory.</p>
+    </div>
+
+    <a class="admin-btn" href="{{ url_for('admin.add_car') }}">
+        <i class="fas fa-plus"></i>
+        Add Vehicle
+    </a>
+</div>
+
+<section class="panel vehicles-panel">
+    <form class="toolbar vehicles-toolbar" method="GET">
+        <input
+            type="search"
+            name="q"
+            value="{{ request.args.get('q', '') }}"
+            placeholder="Search brand, model or VIN"
+            aria-label="Search vehicles">
+
+        <button class="admin-btn" type="submit">
+            <i class="fas fa-search"></i>
+            Search
+        </button>
+    </form>
+
+    <div class="table-wrap vehicles-table-wrap">
+        <table class="vehicles-table">
+            <thead>
+                <tr>
+                    <th>Vehicle</th>
+                    <th>Year</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Featured</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for car in cars %}
+                    <tr>
+                        <td data-label="Vehicle">
+                            <div class="vehicle-cell">
+                                {% if car.main_image %}
+                                    <img
+                                        src="{{ url_for('static', filename=car.main_image.image_path) }}"
+                                        alt="{{ car.brand }} {{ car.model }}">
+                                {% else %}
+                                    <div class="vehicle-placeholder" aria-hidden="true">
+                                        <i class="fas fa-car"></i>
+                                    </div>
+                                {% endif %}
+
+                                <div class="vehicle-summary">
+                                    <b>{{ car.brand }} {{ car.model }}</b>
+                                    <small>{{ car.vin or 'No VIN' }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td data-label="Year">{{ car.year }}</td>
+
+                        <td data-label="Price" class="vehicle-price">
+                            {{ site_settings.currency }} {{ '{:,.0f}'.format(car.price) }}
+                        </td>
+
+                        <td data-label="Status">
+                            <span class="status {{ car.status|lower }}">
+                                {{ car.status }}
+                            </span>
+                        </td>
+
+                        <td data-label="Featured">
+                            {{ 'Yes' if car.is_featured else 'No' }}
+                        </td>
+
+                        <td data-label="Actions">
+                            <div class="actions vehicle-actions">
+                                <a
+                                    class="vehicle-action edit-action"
+                                    href="{{ url_for('admin.edit_car', car_id=car.id) }}">
+                                    <i class="fas fa-pen"></i>
+                                    <span>Edit</span>
+                                </a>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('admin.delete_car', car_id=car.id) }}"
+                                    onsubmit="return confirm('Delete this vehicle?');">
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="{{ csrf_token() }}">
+
+                                    <button
+                                        class="vehicle-action delete-action"
+                                        type="submit">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Delete</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr class="empty-row">
+                        <td colspan="6">No vehicles found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

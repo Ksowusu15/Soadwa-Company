@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Compare Vehicles | {{ site_settings.company_name }}
+{% endblock %}
+
+{% block content %}
+<section class="page-hero compact-page-hero">
+    <div class="container">
+        <p class="eyebrow light">Side-by-Side Review</p>
+        <h1>Compare Vehicles</h1>
+        <p>Review pricing, performance, comfort, and key specifications.</p>
+    </div>
+</section>
+
+<section class="section compare-page">
+    <div class="container">
+        {% if cars|length >= 2 %}
+            <div class="compare-toolbar">
+                <p>
+                    Comparing <strong>{{ cars|length }}</strong> vehicles
+                </p>
+
+                <button
+                    type="button"
+                    class="btn secondary"
+                    id="clearCompare"
+                >
+                    Clear Comparison
+                </button>
+            </div>
+
+            <div class="compare-table-wrap">
+                <table class="vehicle-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Specification</th>
+
+                            {% for car in cars %}
+                                <th>
+                                    <article class="compare-car-heading">
+                                        <button
+                                            type="button"
+                                            class="compare-remove"
+                                            data-car-id="{{ car.id }}"
+                                            aria-label="Remove {{ car.brand }} {{ car.model }}"
+                                        >
+                                            <i class="fas fa-times"></i>
+                                        </button>
+
+                                        {% if car.main_image %}
+                                            <img
+                                                src="{{ url_for('static', filename=car.main_image.image_path) }}"
+                                                alt="{{ car.brand }} {{ car.model }}"
+                                            >
+                                        {% else %}
+                                            <div class="compare-image-placeholder">
+                                                <i class="fas fa-car-side"></i>
+                                            </div>
+                                        {% endif %}
+
+                                        <p class="eyebrow">{{ car.year }}</p>
+                                        <h2>{{ car.brand }} {{ car.model }}</h2>
+                                        <strong>
+                                            {{ site_settings.currency }}
+                                            {{ '{:,.0f}'.format(car.price) }}
+                                        </strong>
+
+                                        <a
+                                            href="{{ url_for('main.car_details', car_id=car.id) }}"
+                                            class="btn primary small"
+                                        >
+                                            View Details
+                                        </a>
+                                    </article>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <th>Availability</th>
+                            {% for car in cars %}<td>{{ car.status }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Year</th>
+                            {% for car in cars %}<td>{{ car.year }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Price</th>
+                            {% for car in cars %}
+                                <td>
+                                    {{ site_settings.currency }}
+                                    {{ '{:,.0f}'.format(car.price) }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Mileage</th>
+                            {% for car in cars %}
+                                <td>{{ '{:,}'.format(car.mileage or 0) }} km</td>
+                            {% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Engine</th>
+                            {% for car in cars %}<td>{{ car.engine or '—' }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Fuel</th>
+                            {% for car in cars %}<td>{{ car.fuel or '—' }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Transmission</th>
+                            {% for car in cars %}<td>{{ car.transmission or '—' }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Body Type</th>
+                            {% for car in cars %}<td>{{ car.body_type or '—' }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Exterior Color</th>
+                            {% for car in cars %}<td>{{ car.color or '—' }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Interior Color</th>
+                            {% for car in cars %}<td>{{ car.interior_color or '—' }}</td>{% endfor %}
+                        </tr>
+
+                        <tr>
+                            <th>Features</th>
+                            {% for car in cars %}
+                                <td class="compare-features">
+                                    {{ car.features or 'No features listed.' }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state compare-empty-state">
+                <i class="fas fa-code-compare"></i>
+                <h2>Select at least two vehicles</h2>
+                <p>
+                    Return to the inventory and select two or three vehicles
+                    using the Compare checkboxes.
+                </p>
+                <a href="{{ url_for('main.inventory') }}" class="btn primary">
+                    Browse Inventory
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

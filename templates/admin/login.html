@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | {{ site_settings.company_name if site_settings else "Administration" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="login-page">
+    <main class="auth-shell">
+        <form method="POST" class="login-card" novalidate>
+            {{ form.hidden_tag() }}
+
+            {% include "admin/_auth_brand.html" %}
+            <h1>Welcome Back</h1>
+            <p class="auth-intro">Manage your showroom securely.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <div class="auth-field">
+                {{ form.username.label }}
+                {{ form.username(autocomplete='username', placeholder='Enter username or email') }}
+                {% for error in form.username.errors %}
+                    <small class="field-error">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <div class="auth-field">
+                {{ form.password.label }}
+                {{ form.password(autocomplete='current-password', placeholder='Enter your password') }}
+                {% for error in form.password.errors %}
+                    <small class="field-error">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <div class="login-options">
+                <label class="remember" for="{{ form.remember.id }}">
+                    {{ form.remember() }}
+                    <span>Remember me</span>
+                </label>
+
+                <a href="{{ url_for('admin.forgot_password') }}" class="forgot-link">
+                    Forgot password?
+                </a>
+            </div>
+
+            {{ form.submit(class='admin-btn auth-submit') }}
+
+            <a href="{{ url_for('main.index') }}" class="back-link">
+                ← Back to website
+            </a>
+        </form>
+    </main>
+</body>
+</html>

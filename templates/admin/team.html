@@ -1,0 +1,109 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Team Members{% endblock %}
+
+{% block content %}
+    <div class="page-title-row">
+        <div>
+            <p class="eyebrow">Website Content</p>
+            <h1>Team Members</h1>
+            <p>Manage the people displayed in the About page team section.</p>
+        </div>
+
+        <a href="{{ url_for('admin.add_team_member') }}" class="btn primary">
+            <i class="fas fa-plus"></i>
+            Add Team Member
+        </a>
+    </div>
+
+    <div class="admin-card">
+        {% if members %}
+            <div class="table-responsive">
+                <table class="team-table">
+                    <thead>
+                        <tr>
+                            <th>Profile</th>
+                            <th>Role</th>
+                            <th>Order</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in members %}
+                            <tr>
+                                <td data-label="Profile">
+                                    <div class="admin-person">
+                                        {% if member.image %}
+                                            <img
+                                                src="{{ url_for('static', filename=member.image) }}"
+                                                alt="{{ member.name }}"
+                                            >
+                                        {% else %}
+                                            <span class="admin-avatar">
+                                                <i class="fas fa-user"></i>
+                                            </span>
+                                        {% endif %}
+
+                                        <div>
+                                            <strong>{{ member.name }}</strong>
+                                            <small>{{ member.email or 'No email provided' }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="Role">{{ member.role }}</td>
+                                <td data-label="Order">{{ member.display_order }}</td>
+                                <td data-label="Status">
+                                    <span class="status {{ 'available' if member.is_active else 'sold' }}">
+                                        {{ 'Visible' if member.is_active else 'Hidden' }}
+                                    </span>
+                                </td>
+                                <td data-label="Actions">
+                                    <div class="table-actions team-actions">
+                                        <a
+                                            href="{{ url_for('admin.edit_team_member', member_id=member.id) }}"
+                                            class="icon-btn"
+                                            title="Edit"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                        </a>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('admin.toggle_team_member', member_id=member.id) }}"
+                                        >
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button class="icon-btn" type="submit" title="Show or hide">
+                                                <i class="fas {{ 'fa-eye-slash' if member.is_active else 'fa-eye' }}"></i>
+                                            </button>
+                                        </form>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('admin.delete_team_member', member_id=member.id) }}"
+                                            onsubmit="return confirm('Delete this team member?');"
+                                        >
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button class="icon-btn danger" type="submit" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-admin-state">
+                <i class="fas fa-people-group"></i>
+                <h2>No team members yet</h2>
+                <p>Add your first team member to display them on the About page.</p>
+                <a href="{{ url_for('admin.add_team_member') }}" class="btn primary">
+                    Add Team Member
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

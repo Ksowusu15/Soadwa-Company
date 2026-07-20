@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Inventory | {{ site_settings.company_name }}
+{% endblock %}
+
+{% block content %}
+
+    <section class="page-hero">
+        <div class="container">
+            <p class="eyebrow light">Premium Collection</p>
+            <h1>Vehicle Inventory</h1>
+            <p>Find the luxury vehicle that matches your ambition.</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container inventory-layout">
+
+            <aside class="filters">
+                <form method="GET" action="{{ url_for('main.inventory') }}">
+                    <h3>Filter Vehicles</h3>
+
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ request.args.get('q', '') }}"
+                        placeholder="Search brand or model"
+                    >
+
+                    <select name="brand">
+                        <option value="">All Brands</option>
+
+                        {% for brand in brands %}
+                            <option
+                                value="{{ brand }}"
+                                {% if request.args.get('brand') == brand %}selected{% endif %}
+                            >
+                                {{ brand }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <input
+                        type="number"
+                        name="year"
+                        value="{{ request.args.get('year', '') }}"
+                        placeholder="Year"
+                        min="1900"
+                        max="2100"
+                    >
+
+                    <div class="two">
+                        <input
+                            type="number"
+                            name="min_price"
+                            value="{{ request.args.get('min_price', '') }}"
+                            placeholder="Minimum price"
+                            min="0"
+                        >
+
+                        <input
+                            type="number"
+                            name="max_price"
+                            value="{{ request.args.get('max_price', '') }}"
+                            placeholder="Maximum price"
+                            min="0"
+                        >
+                    </div>
+
+                    <select name="fuel">
+                        <option value="">All Fuel Types</option>
+
+                        {% for option in ['Petrol', 'Diesel', 'Hybrid', 'Electric'] %}
+                            <option
+                                value="{{ option }}"
+                                {% if request.args.get('fuel') == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="transmission">
+                        <option value="">All Transmissions</option>
+
+                        {% for option in ['Automatic', 'Manual'] %}
+                            <option
+                                value="{{ option }}"
+                                {% if request.args.get('transmission') == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="body_type">
+                        <option value="">All Body Types</option>
+
+                        {% for option in ['Sedan', 'SUV', 'Coupe', 'Convertible', 'Hatchback', 'Pickup', 'Wagon'] %}
+                            <option
+                                value="{{ option }}"
+                                {% if request.args.get('body_type') == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="status">
+                        <option value="">All Statuses</option>
+
+                        {% for option in ['Available', 'Reserved', 'Sold'] %}
+                            <option
+                                value="{{ option }}"
+                                {% if request.args.get('status') == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <input
+                        type="hidden"
+                        name="sort"
+                        value="{{ request.args.get('sort', 'latest') }}"
+                    >
+
+                    <button type="submit" class="btn primary full">
+                        Apply Filters
+                    </button>
+
+                    <a class="clear-link" href="{{ url_for('main.inventory') }}">
+                        Clear Filters
+                    </a>
+                </form>
+            </aside>
+
+            <div class="inventory-content">
+                <div class="inventory-top">
+                    <p>
+                        {{ cars.total }} vehicle{{ '' if cars.total == 1 else 's' }}
+                    </p>
+
+                    <form
+                        method="GET"
+                        action="{{ url_for('main.inventory') }}"
+                        class="sort-form"
+                    >
+                        <input type="hidden" name="q" value="{{ request.args.get('q', '') }}">
+                        <input type="hidden" name="brand" value="{{ request.args.get('brand', '') }}">
+                        <input type="hidden" name="year" value="{{ request.args.get('year', '') }}">
+                        <input type="hidden" name="min_price" value="{{ request.args.get('min_price', '') }}">
+                        <input type="hidden" name="max_price" value="{{ request.args.get('max_price', '') }}">
+                        <input type="hidden" name="fuel" value="{{ request.args.get('fuel', '') }}">
+                        <input type="hidden" name="transmission" value="{{ request.args.get('transmission', '') }}">
+                        <input type="hidden" name="body_type" value="{{ request.args.get('body_type', '') }}">
+                        <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
+
+                        <select
+                            name="sort"
+                            aria-label="Sort vehicles"
+                            onchange="this.form.submit()"
+                        >
+                            <option
+                                value="latest"
+                                {% if request.args.get('sort', 'latest') == 'latest' %}selected{% endif %}
+                            >
+                                Latest Cars
+                            </option>
+
+                            <option
+                                value="price_asc"
+                                {% if request.args.get('sort') == 'price_asc' %}selected{% endif %}
+                            >
+                                Lowest Price
+                            </option>
+
+                            <option
+                                value="price_desc"
+                                {% if request.args.get('sort') == 'price_desc' %}selected{% endif %}
+                            >
+                                Highest Price
+                            </option>
+
+                            <option
+                                value="oldest"
+                                {% if request.args.get('sort') == 'oldest' %}selected{% endif %}
+                            >
+                                Oldest Cars
+                            </option>
+                        </select>
+                    </form>
+                </div>
+
+                <div class="car-grid inventory-grid">
+                    {% for car in cars.items %}
+                        {% include '_car_card.html' %}
+                    {% else %}
+                        <div class="empty-state">
+                            <h3>No vehicles match your filters.</h3>
+                            <p>Try changing or clearing some of your filters.</p>
+                            <a href="{{ url_for('main.inventory') }}" class="btn primary">
+                                View All Vehicles
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if cars.pages > 1 %}
+                    <nav class="pagination" aria-label="Vehicle inventory pages">
+                        {% if cars.has_prev %}
+                            <a href="{{ url_for(
+                                     'main.inventory',
+                                     page=cars.prev_num,
+                                     q=request.args.get('q', ''),
+                                     brand=request.args.get('brand', ''),
+                                     year=request.args.get('year', ''),
+                                     min_price=request.args.get('min_price', ''),
+                                     max_price=request.args.get('max_price', ''),
+                                     fuel=request.args.get('fuel', ''),
+                                     transmission=request.args.get('transmission', ''),
+                                     body_type=request.args.get('body_type', ''),
+                                     status=request.args.get('status', ''),
+                                     sort=request.args.get('sort', 'latest')
+                                     ) }}">
+                                Previous
+                            </a>
+                        {% endif %}
+
+                        {% for page_number in cars.iter_pages(
+                        left_edge=1,
+                        right_edge=1,
+                        left_current=2,
+                        right_current=2
+                        ) %}
+                        {% if page_number %}
+                            <a
+                                class="{% if page_number == cars.page %}active{% endif %}"
+                                href="{{ url_for(
+                                      'main.inventory',
+                                      page=page_number,
+                                      q=request.args.get('q', ''),
+                                      brand=request.args.get('brand', ''),
+                                      year=request.args.get('year', ''),
+                                      min_price=request.args.get('min_price', ''),
+                                      max_price=request.args.get('max_price', ''),
+                                      fuel=request.args.get('fuel', ''),
+                                      transmission=request.args.get('transmission', ''),
+                                      body_type=request.args.get('body_type', ''),
+                                      status=request.args.get('status', ''),
+                                      sort=request.args.get('sort', 'latest')
+                                      ) }}"
+                            >
+                                {{ page_number }}
+                            </a>
+                        {% else %}
+                            <span>…</span>
+                        {% endif %}
+                {% endfor %}
+
+                {% if cars.has_next %}
+                    <a href="{{ url_for(
+                             'main.inventory',
+                             page=cars.next_num,
+                             q=request.args.get('q', ''),
+                             brand=request.args.get('brand', ''),
+                             year=request.args.get('year', ''),
+                             min_price=request.args.get('min_price', ''),
+                             max_price=request.args.get('max_price', ''),
+                             fuel=request.args.get('fuel', ''),
+                             transmission=request.args.get('transmission', ''),
+                             body_type=request.args.get('body_type', ''),
+                             status=request.args.get('status', ''),
+                             sort=request.args.get('sort', 'latest')
+                             ) }}">
+                        Next
+                    </a>
+                {% endif %}
+            </nav>
+{% endif %}
+</div>
+</div>
+</section>
+
+<div id="compareBar" class="compare-bar" aria-hidden="true">
+    <span>
+        <b id="compareCount">0</b> vehicles selected
+    </span>
+
+    <button type="button" class="btn primary" id="compareBtn">
+        Compare
+    </button>
+</div>
+
+{% endblock %}

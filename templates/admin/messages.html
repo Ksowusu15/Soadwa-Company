@@ -1,0 +1,56 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <div>
+        <h1>Customer Messages</h1>
+        <p>Review, manage, and export customer inquiries.</p>
+    </div>
+
+    <a class="admin-btn export-btn" href="{{ url_for('admin.export_messages_csv') }}">
+        <i class="fas fa-file-csv"></i>
+        Export CSV
+    </a>
+</div>
+
+<section class="panel">
+    <div class="message-list">
+        {% for m in messages %}
+            <article class="message-item {% if not m.is_read %}unread{% endif %}">
+                <div class="message-head">
+                    <div>
+                        <h3>{{ m.name }}</h3>
+                        <p>{{ m.email }} · {{ m.phone or 'No phone' }}</p>
+                    </div>
+
+                    <time>{{ m.created_at.strftime('%d %b %Y, %H:%M') }}</time>
+                </div>
+
+                <p>{{ m.message }}</p>
+
+                <div class="actions">
+                    <a href="mailto:{{ m.email }}?subject=Re: Your {{ site_settings.company_name if site_settings else "dealership" }} inquiry">
+                        Reply by email
+                    </a>
+
+                    <form method="post" action="{{ url_for('admin.toggle_message', message_id=m.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit">
+                            {{ 'Mark unread' if m.is_read else 'Mark read' }}
+                        </button>
+                    </form>
+
+                    <form method="post" action="{{ url_for('admin.delete_message', message_id=m.id) }}" onsubmit="return confirm('Delete this message?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit">Delete</button>
+                    </form>
+                </div>
+            </article>
+        {% else %}
+            <p>No messages yet.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

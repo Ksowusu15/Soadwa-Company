@@ -1,0 +1,143 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Overview of your dealership operations.</p>
+    </div>
+
+    <a class="admin-btn" href="{{ url_for('admin.add_car') }}">
+        + Add Vehicle
+    </a>
+</div>
+
+<div class="stat-cards">
+    {% for icon, label, value in [
+        ('car', 'Total Vehicles', stats.total),
+        ('circle-check', 'Available', stats.available),
+        ('clock', 'Reserved', stats.reserved),
+        ('flag-checkered', 'Sold', stats.sold),
+        ('envelope', 'Unread Messages', stats.messages),
+        ('calendar', 'Pending Test Drives', stats.test_drives)
+    ] %}
+        <article>
+            <i class="fas fa-{{ icon }}"></i>
+            <span>{{ label }}</span>
+            <strong>{{ value }}</strong>
+        </article>
+    {% endfor %}
+</div>
+
+<div class="dashboard-grid">
+    <section class="panel inventory-status-panel">
+        <div class="panel-head inventory-status-head">
+            <div>
+                <h2>Inventory Status</h2>
+                <p class="panel-subtitle">Current vehicle availability breakdown</p>
+            </div>
+        </div>
+
+        <div class="inventory-chart-shell">
+            <canvas
+                id="inventoryChart"
+                data-available="{{ stats.available }}"
+                data-reserved="{{ stats.reserved }}"
+                data-sold="{{ stats.sold }}"
+                aria-label="Inventory status chart">
+            </canvas>
+        </div>
+
+        <div class="inventory-legend">
+            <article>
+                <span class="legend-dot available-dot"></span>
+                <div>
+                    <small>Available</small>
+                    <strong>{{ stats.available }}</strong>
+                </div>
+            </article>
+
+            <article>
+                <span class="legend-dot reserved-dot"></span>
+                <div>
+                    <small>Reserved</small>
+                    <strong>{{ stats.reserved }}</strong>
+                </div>
+            </article>
+
+            <article>
+                <span class="legend-dot sold-dot"></span>
+                <div>
+                    <small>Sold</small>
+                    <strong>{{ stats.sold }}</strong>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2>Recent Messages</h2>
+            <a href="{{ url_for('admin.messages') }}">View all</a>
+        </div>
+
+        {% for message in recent_messages %}
+            <div class="activity">
+                <span>{{ message.name[:1]|upper }}</span>
+                <div>
+                    <b>{{ message.name }}</b>
+                    <p>{{ message.message[:55] }}...</p>
+                </div>
+                <time>{{ message.created_at.strftime('%d %b') }}</time>
+            </div>
+        {% else %}
+            <p class="muted">No messages yet.</p>
+        {% endfor %}
+    </section>
+</div>
+
+<section class="panel recent-vehicles-panel">
+    <div class="panel-head">
+        <h2>Recently Added Vehicles</h2>
+        <a href="{{ url_for('admin.cars') }}">Manage inventory</a>
+    </div>
+
+    <div class="table-wrap recent-vehicles-wrap">
+        <table class="recent-vehicles-table">
+            <thead>
+                <tr>
+                    <th>Vehicle</th>
+                    <th>Year</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for car in recent_cars %}
+                    <tr>
+                        <td data-label="Vehicle">
+                            <b>{{ car.brand }} {{ car.model }}</b>
+                        </td>
+                        <td data-label="Year">{{ car.year }}</td>
+                        <td data-label="Price">
+                            {{ site_settings.currency }} {{ '{:,.0f}'.format(car.price) }}
+                        </td>
+                        <td data-label="Status">
+                            <span class="status {{ car.status|lower }}">
+                                {{ car.status }}
+                            </span>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr class="empty-row">
+                        <td colspan="4">No vehicles added.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

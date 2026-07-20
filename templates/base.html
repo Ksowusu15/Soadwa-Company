@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{% block title %}{{ site_settings.seo_title }}{% endblock %}</title>
+    <meta name="description" content="{{ site_settings.seo_description }}"><meta name="keywords" content="{{ site_settings.keywords }}">
+    {% if site_settings.favicon %}<link rel="icon" href="{{ url_for('static', filename=site_settings.favicon) }}">{% endif %}
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>:root{--primary-color:{{ site_settings.primary_color }};--dark-color:{{ site_settings.secondary_color }};}</style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="page-loader"><span></span></div>
+    <nav class="navbar" id="navbar"><div class="container nav-inner">
+      <a class="brand" href="{{ url_for('main.index') }}">
+        {% if site_settings.logo %}
+        <img
+          src="{{ url_for('static', filename=site_settings.logo) }}"
+          alt="{{ site_settings.company_name }} logo"
+        >
+        {% endif %}
+
+        <span class="brand-name">
+          {{ site_settings.company_name }}
+        </span>
+      </a>
+      <button class="menu-btn" type="button" aria-label="Open navigation menu" aria-expanded="false"><i class="fas fa-bars"></i></button>
+      <div class="nav-links"><a href="{{ url_for('main.index') }}">Home</a><a href="{{ url_for('main.inventory') }}">Inventory</a><a href="{{ url_for('main.about') }}">About</a><a href="{{ url_for('main.services') }}">Services</a><a href="{{ url_for('main.contact') }}">Contact</a><a class="nav-admin" href="{{ url_for('admin.login') }}">Admin Login</a></div>
+    </div></nav>
+    {% with messages=get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-wrap">{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}<button>&times;</button></div>{% endfor %}</div>{% endif %}{% endwith %}
+    <main>{% block content %}{% endblock %}</main>
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-column footer-brand-column">
+          <a class="footer-logo" href="{{ url_for('main.index') }}">
+            {% if site_settings.logo %}
+            <img
+              src="{{ url_for('static', filename=site_settings.logo) }}"
+              alt="{{ site_settings.company_name }} logo"
+            >
+            {% endif %}
+
+            <h3>{{ site_settings.company_name }}</h3>
+          </a>
+
+          <p class="footer-description">
+            {{ site_settings.description }}
+          </p>
+        </div>
+
+        <div class="footer-column footer-links-column">
+          <h4>Explore</h4>
+          <nav class="footer-links" aria-label="Footer navigation">
+            <a href="{{ url_for('main.inventory') }}">Inventory</a>
+            <a href="{{ url_for('main.about') }}">About</a>
+            <a href="{{ url_for('main.services') }}">Services</a>
+            <a href="{{ url_for('main.contact') }}">Contact</a>
+          </nav>
+        </div>
+
+        <div class="footer-column footer-contact-column">
+          <h4>Contact</h4>
+          <div class="footer-contact-list">
+            {% if site_settings.phone %}
+            <a href="tel:{{ site_settings.phone|replace(' ', '') }}">
+              <i class="fa-solid fa-phone"></i>
+              <span>{{ site_settings.phone }}</span>
+            </a>
+            {% endif %}
+
+            {% if site_settings.email %}
+            <a href="mailto:{{ site_settings.email }}">
+              <i class="fa-solid fa-envelope"></i>
+              <span>{{ site_settings.email }}</span>
+            </a>
+            {% endif %}
+
+            {% if site_settings.address %}
+            <p>
+              <i class="fa-solid fa-location-dot"></i>
+              <span>{{ site_settings.address }}</span>
+            </p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="footer-column footer-social-column">
+          <h4>Follow Us</h4>
+          <div class="socials">
+            {% for icon, url in [
+              ('facebook-f', site_settings.facebook),
+              ('instagram', site_settings.instagram),
+              ('x-twitter', site_settings.twitter),
+              ('linkedin-in', site_settings.linkedin),
+              ('youtube', site_settings.youtube),
+              ('tiktok', site_settings.tiktok)
+            ] %}
+              {% if url %}
+                {% set social_url = url|trim %}
+
+                {% if icon == 'tiktok' and not social_url.startswith('http://') and not social_url.startswith('https://') %}
+                  {% set social_url = 'https://www.tiktok.com/@' + social_url|replace('@', '') %}
+                {% endif %}
+
+              <a
+                href="{{ social_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Visit our {{ icon|replace('-f', '')|replace('-in', '') }} page"
+              >
+                <i class="fab fa-{{ icon }}"></i>
+              </a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="container footer-bottom">
+        <p>
+          © {{ site_settings.company_name }}. All rights reserved.
+        </p>
+
+        <a href="{{ url_for('main.contact') }}">Contact Us</a>
+      </div>
+    </footer>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script><script src="{{ url_for('static', filename='js/animations.js') }}"></script>{% block scripts %}{% endblock %}
+  </body></html>

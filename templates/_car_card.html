@@ -1,0 +1,53 @@
+<article class="car-card reveal" data-car-id="{{ car.id }}">
+    <div
+        class="car-image-wrap"
+        {% if car.main_image %}
+            style="--vehicle-image: url('{{ url_for('static', filename=car.main_image.image_path) }}');"
+        {% endif %}
+    >
+        {% if car.main_image %}
+            <img
+                loading="lazy"
+                decoding="async"
+                src="{{ url_for('static', filename=car.main_image.image_path) }}"
+                alt="{{ car.brand }} {{ car.model }}"
+            >
+        {% else %}
+            <div class="image-placeholder">
+                <i class="fas fa-car-side"></i>
+            </div>
+        {% endif %}
+
+        {% if car.badge %}
+            <span class="badge">{{ car.badge }}</span>
+        {% endif %}
+
+        <button class="favorite-btn" type="button" aria-label="Add vehicle to favorites">
+            <i class="far fa-heart"></i>
+        </button>
+
+        <label class="compare-check">
+            <input type="checkbox" class="compare-toggle">
+            Compare
+        </label>
+    </div>
+
+    <div class="car-body">
+        <p class="eyebrow">{{ car.year }} · {{ car.body_type or 'Vehicle' }}</p>
+        <h3>{{ car.brand }} {{ car.model }}</h3>
+
+        <div class="spec-row">
+            <span><i class="fas fa-gauge-high"></i>{{ '{:,}'.format(car.mileage or 0) }} km</span>
+            <span><i class="fas fa-gears"></i>{{ car.transmission or '—' }}</span>
+            <span><i class="fas fa-gas-pump"></i>{{ car.fuel or '—' }}</span>
+        </div>
+
+        <div class="card-bottom">
+            <strong>{{ site_settings.currency }} {{ '{:,.0f}'.format(car.price) }}</strong>
+            <a href="{{ url_for('main.car_details', car_id=car.id) }}">
+                View Details
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</article>

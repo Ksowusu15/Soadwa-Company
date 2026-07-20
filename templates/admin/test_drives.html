@@ -1,0 +1,64 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Test Drives{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <div>
+        <h1>Test Drive Requests</h1>
+        <p>Manage appointments, update statuses, and export requests.</p>
+    </div>
+
+    <a class="admin-btn export-btn" href="{{ url_for('admin.export_test_drives_csv') }}">
+        <i class="fas fa-file-csv"></i>
+        Export CSV
+    </a>
+</div>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Vehicle</th>
+                    <th>Appointment</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in requests %}
+                    <tr>
+                        <td><b>{{ item.customer_name }}</b></td>
+                        <td>{{ item.car.brand }} {{ item.car.model }}</td>
+                        <td>{{ item.appointment_date.strftime('%d %b %Y, %H:%M') }}</td>
+                        <td>
+                            {{ item.phone }}
+                            <br>
+                            <small>{{ item.email }}</small>
+                        </td>
+                        <td>
+                            <form method="post" action="{{ url_for('admin.test_drive_status', item_id=item.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <select name="status" onchange="this.form.submit()">
+                                    {% for status in ['Pending', 'Approved', 'Completed', 'Cancelled'] %}
+                                        <option value="{{ status }}" {% if item.status == status %}selected{% endif %}>
+                                            {{ status }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5">No test drive requests.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

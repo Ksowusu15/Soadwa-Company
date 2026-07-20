@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    About | {{ site_settings.company_name }}
+{% endblock %}
+
+{% block content %}
+
+    <section class="page-hero">
+        <div class="container">
+            <p class="eyebrow light">Our Story</p>
+            <h1>Driven by excellence.</h1>
+            <p>Luxury vehicles, trusted guidance and service built around you.</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container split">
+            <div class="reveal">
+                <p class="eyebrow">Who We Are</p>
+                <h2>{{ site_settings.company_name }}</h2>
+                <p class="long-copy">
+                    {{ site_settings.about_text }}
+                </p>
+            </div>
+
+            <div class="values reveal">
+                <div>
+                    <h3>Mission</h3>
+                    <p>{{ site_settings.mission }}</p>
+                </div>
+
+                <div>
+                    <h3>Vision</h3>
+                    <p>{{ site_settings.vision }}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section dark">
+        <div class="container">
+            <div class="section-head">
+                <p class="eyebrow light">Why Choose Us</p>
+                <h2>Why clients choose us</h2>
+            </div>
+
+            <div class="feature-list three">
+                <div class="reveal">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <h3>Carefully Selected</h3>
+                    <p>Premium vehicles chosen for quality, performance and condition.</p>
+                </div>
+
+                <div class="reveal">
+                    <i class="fas fa-file-shield"></i>
+                    <h3>Transparent Process</h3>
+                    <p>Clear information, fair guidance and trusted support at every stage.</p>
+                </div>
+
+                <div class="reveal">
+                    <i class="fas fa-star"></i>
+                    <h3>Exceptional Experience</h3>
+                    <p>Personal service before, during and after every purchase.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section team-section">
+        <div class="container">
+            <div class="section-head centered reveal">
+                <p class="eyebrow">Meet Our Team</p>
+                <h2>The people behind your premium experience</h2>
+                <p>
+                    Our experienced team is committed to helping every client find the
+                    right vehicle with confidence.
+                </p>
+            </div>
+
+            {% if team_members %}
+                <div class="team-grid">
+                    {% for member in team_members %}
+                        <article class="team-card reveal">
+                            <div class="team-photo">
+                                {% if member.image %}
+                                    <img
+                                        src="{{ url_for('static', filename=member.image) }}"
+                                        alt="{{ member.name }}"
+                                        loading="lazy"
+                                    >
+                                {% else %}
+                                    <i class="fas fa-user-tie"></i>
+                                {% endif %}
+                            </div>
+
+                            <div class="team-info">
+                                <h3>{{ member.name }}</h3>
+                                <p class="team-role">{{ member.role }}</p>
+
+                                {% if member.bio %}
+                                    <p>{{ member.bio }}</p>
+                                {% endif %}
+
+                                {% if member.email or member.phone or member.linkedin or member.twitter %}
+                                    <div class="team-socials">
+                                        {% if member.email %}
+                                            <a href="mailto:{{ member.email }}" aria-label="Email {{ member.name }}">
+                                                <i class="fas fa-envelope"></i>
+                                            </a>
+                                        {% endif %}
+
+                                        {% if member.phone %}
+                                            <a href="tel:{{ member.phone }}" aria-label="Call {{ member.name }}">
+                                                <i class="fas fa-phone"></i>
+                                            </a>
+                                        {% endif %}
+
+                                        {% if member.linkedin %}
+                                            <a
+                                                href="{{ member.linkedin }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label="LinkedIn profile for {{ member.name }}"
+                                            >
+                                                <i class="fab fa-linkedin-in"></i>
+                                            </a>
+                                        {% endif %}
+
+                                        {% if member.twitter %}
+                                            <a
+                                                href="{{ member.twitter }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label="Twitter profile for {{ member.name }}"
+                                            >
+                                                <i class="fab fa-x-twitter"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state reveal">
+                    <h3>Our team profiles are coming soon.</h3>
+                    <p>Please check back shortly to meet the people behind our service.</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="section team-cta">
+        <div class="container cta-panel reveal">
+            <div>
+                <p class="eyebrow light">Speak With Our Team</p>
+                <h2>Let us help you find your next vehicle.</h2>
+            </div>
+
+            <a href="{{ url_for('main.contact') }}" class="btn primary">
+                Contact Our Team
+            </a>
+        </div>
+    </section>
+
+{% endblock %}

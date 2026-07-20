@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {{ car.brand }} {{ car.model }} | {{ site_settings.company_name }}
+{% endblock %}
+
+{% block content %}
+<section class="detail-head">
+    <div class="container">
+        <a class="detail-back-link" href="{{ url_for('main.inventory') }}">
+            <i class="fas fa-arrow-left"></i>
+            Back to inventory
+        </a>
+
+        <div class="detail-head-row">
+            <div class="detail-title-group">
+                <p class="eyebrow">{{ car.year }} · {{ car.status }}</p>
+                <h1>{{ car.brand }} {{ car.model }}</h1>
+            </div>
+
+            <strong class="detail-price">
+                {{ site_settings.currency }} {{ '{:,.0f}'.format(car.price) }}
+            </strong>
+        </div>
+    </div>
+</section>
+
+<section class="container vehicle-gallery" id="gallery">
+    <div
+        class="vehicle-gallery-main"
+        {% if car.main_image %}
+            style="--vehicle-image: url('{{ url_for('static', filename=car.main_image.image_path) }}');"
+        {% endif %}
+    >
+        {% if car.main_image %}
+            <img
+                id="mainCarImage"
+                src="{{ url_for('static', filename=car.main_image.image_path) }}"
+                alt="{{ car.brand }} {{ car.model }}"
+            >
+        {% else %}
+            <div class="image-placeholder">
+                <i class="fas fa-car-side"></i>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if car.images %}
+        <div class="vehicle-thumbnails" aria-label="Vehicle image gallery">
+            {% for image in car.images %}
+                <button
+                    type="button"
+                    class="vehicle-thumbnail{% if loop.first %} active{% endif %}"
+                    aria-label="Show vehicle image {{ loop.index }}"
+                >
+                    <img
+                        src="{{ url_for('static', filename=image.image_path) }}"
+                        alt="{{ car.brand }} {{ car.model }} view {{ loop.index }}"
+                    >
+                </button>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+
+<section class="section vehicle-overview-section">
+    <div class="container vehicle-overview-layout">
+        <main class="vehicle-overview-content">
+            <div class="overview-heading">
+                <p class="eyebrow">Vehicle details</p>
+                <h2>Vehicle Overview</h2>
+            </div>
+
+            <div class="overview-spec-grid">
+                {% for label, value, icon in [
+                    ('Year', car.year, 'fa-calendar-alt'),
+                    ('Mileage', ('{:,}'.format(car.mileage or 0)) ~ ' km', 'fa-road'),
+                    ('Engine', car.engine, 'fa-cogs'),
+                    ('Fuel', car.fuel, 'fa-gas-pump'),
+                    ('Transmission', car.transmission, 'fa-exchange-alt'),
+                    ('Body Type', car.body_type, 'fa-car-side'),
+                    ('Exterior', car.color, 'fa-palette'),
+                    ('Interior', car.interior_color, 'fa-chair'),
+                    ('VIN', car.vin, 'fa-fingerprint'),
+                    ('Status', car.status, 'fa-check-circle')
+                ] %}
+                    <div class="overview-spec-card">
+                        <span class="overview-spec-icon">
+                            <i class="fas {{ icon }}"></i>
+                        </span>
+                        <div>
+                            <span class="overview-spec-label">{{ label }}</span>
+                            <strong>{{ value or '—' }}</strong>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <section class="overview-copy-block">
+                <h2>Description</h2>
+                <p class="long-copy">
+                    {{ car.description or 'Contact our team for full vehicle information.' }}
+                </p>
+            </section>
+
+            <section class="overview-copy-block">
+                <h2>Features</h2>
+                <div class="features overview-features">
+                    {% for feature in car.feature_list %}
+                        <span>
+                            <i class="fas fa-check"></i>
+                            {{ feature }}
+                        </span>
+                    {% else %}
+                        <p>Feature information is available on request.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </main>
+
+        <aside class="vehicle-overview-sidebar">
+            <div class="finance-card responsive-finance-card">
+                <p class="eyebrow">Plan your purchase</p>
+                <h3>Finance Calculator</h3>
+
+                <div class="finance-field">
+                    <label for="downPayment">Down payment</label>
+                    <input id="downPayment" type="number" value="0" min="0">
+                </div>
+
+                <div class="finance-field">
+                    <label for="financeTerm">Term (months)</label>
+                    <select id="financeTerm">
+                        <option>12</option>
+                        <option>24</option>
+                        <option selected>36</option>
+                        <option>48</option>
+                        <option>60</option>
+                    </select>
+                </div>
+
+                <div class="finance-field">
+                    <label for="interestRate">Interest rate (%)</label>
+                    <input id="interestRate" type="number" value="12" min="0" step="0.1">
+                </div>
+
+                <div class="estimate">
+                    <span>Estimated monthly</span>
+                    <strong id="monthlyPayment">—</strong>
+                </div>
+
+                <button
+                    class="btn primary full"
+                    id="calculateFinance"
+                    data-price="{{ car.price }}"
+                    type="button"
+                >
+                    Calculate payment
+                </button>
+            </div>
+
+            <a
+                class="btn whatsapp full vehicle-whatsapp-button"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://wa.me/{{ site_settings.whatsapp }}?text=I am interested in the {{ car.brand }} {{ car.model }}"
+            >
+                <i class="fab fa-whatsapp"></i>
+                WhatsApp Dealer
+            </a>
+        </aside>
+    </div>
+</section>
+
+<section class="section soft vehicle-contact-section">
+    <div class="container forms-grid vehicle-forms-grid">
+        <form method="post" class="premium-form">
+            <h2>Contact Dealer</h2>
+            {{ message_form.hidden_tag() }}
+
+            {% for field in [message_form.name, message_form.email, message_form.phone, message_form.message] %}
+                <div class="form-field">
+                    {{ field.label }}
+                    {{ field() }}
+                    {% for error in field.errors %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            {{ message_form.submit(class='btn primary full') }}
+        </form>
+
+        <form method="post" class="premium-form">
+            <h2>Book a Test Drive</h2>
+            {{ test_form.hidden_tag() }}
+
+            {% for field in [test_form.customer_name, test_form.email, test_form.phone, test_form.appointment_date] %}
+                <div class="form-field">
+                    {{ field.label }}
+                    {{ field() }}
+                    {% for error in field.errors %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            {{ test_form.submit(class='btn primary full') }}
+        </form>
+    </div>
+</section>
+
+{% if related %}
+<section class="section">
+    <div class="container">
+        <div class="section-head">
+            <h2>Related Vehicles</h2>
+        </div>
+
+        <div class="car-grid">
+            {% for car in related %}
+                {% include '_car_card.html' %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
