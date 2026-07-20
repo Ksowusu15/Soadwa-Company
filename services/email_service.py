@@ -1,72 +1,112 @@
-import smtplib
-import ssl
-from email.message import EmailMessage
-from email.utils import formataddr
+import os
 
+import resend
 from flask import current_app
 
 
 def send_password_reset_email(settings, admin, reset_url):
-    """Send a branded password-reset email using the saved website settings."""
-    if settings is None:
-        current_app.logger.warning("Password reset requested without website settings.")
+    """Send a branded password-reset email through the Resend HTTPS API."""
+
+    api_key = os.getenv("RESEND_API_KEY", "").strip()
+
+    if not api_key:
+        current_app.logger.error(
+            "RESEND_API_KEY is not configured."
+        )
         return False
 
-    smtp_host = (settings.smtp_host or "").strip()
-    smtp_username = (settings.smtp_username or "").strip()
-    smtp_password = settings.smtp_password or ""
+    company_name = (
+        settings.company_name
+        if settings and settings.company_name
+        else "Soadwa Company Ltd"
+    ).strip()
 
-    try:
-        smtp_port = int(settings.smtp_port or 587)
-    except (TypeError, ValueError):
-        smtp_port = 587
+    sender_email = os.getenv(
+        "RESEND_FROM_EMAIL",
+        "onboarding@resend.dev",
+    ).strip()
 
-    if not smtp_host or not smtp_username or not smtp_password:
-        current_app.logger.warning("Password reset requested, but SMTP settings are incomplete.")
-        return False
+    resend.api_key = api_key
 
-    company_name = (settings.company_name or "Soadwa Company Ltd").strip()
-    message = EmailMessage()
-    message["Subject"] = f"Reset Your Password - {company_name}"
-    message["From"] = formataddr((company_name, smtp_username))
-    message["To"] = admin.email
-    message.set_content(
+    text_body = (
         f"Hello {admin.username},\n\n"
-        f"We received a request to reset the password for your {company_name} "
-        "administrator account.\n\n"
-        f"Reset your password using this secure link:\n{reset_url}\n\n"
-        "This link expires in 15 minutes and can only be used once.\n\n"
-        "If you did not request this reset, you can safely ignore this email.\n\n"
-        f"Regards,\n{company_name}\nAdministration"
+        f"We received a request to reset the password for your "
+        f"{company_name} administrator account.\n\n"
+        f"Reset your password using this secure link:\n"
+        f"{reset_url}\n\n"
+        f"This link expires in 15 minutes and can only be used once.\n\n"
+        f"If you did not request this reset, you can safely ignore "
+        f"this email.\n\n"
+        f"Regards,\n"
+        f"{company_name}\n"
+        f"Administration"
     )
 
-    context = ssl.create_default_context()
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
+        <h2 style="color: #b91c1c;">{company_name}</h2>
+
+        <p>Hello {admin.username},</p>
+
+        <p>
+            We received a request to reset the password for your
+            {company_name} administrator account.
+        </p>
+
+        <p>
+            <a
+                href="{reset_url}"
+                style="
+                    display: inline-block;
+                    padding: 12px 20px;
+                    background: #b91c1c;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 6px;
+                    font-weight: 600;
+                "
+            >
+                Reset Password
+            </a>
+        </p>
+
+        <p>
+            This link expires in 15 minutes and can only be used once.
+        </p>
+
+        <p>
+            If you did not request this reset, you can safely ignore
+            this email.
+        </p>
+
+        <p>
+            Regards,<br>
+            {company_name}<br>
+            Administration
+        </p>
+    </div>
+    """
 
     try:
-        if smtp_port == 465:
-            with smtplib.SMTP_SSL(
-                smtp_host,
-                smtp_port,
-                context=context,
-                timeout=30,
-            ) as server:
-                server.login(smtp_username, smtp_password)
-                server.send_message(message)
-        else:
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
-                server.ehlo()
-                server.starttls(context=context)
-                server.ehlo()
-                server.login(smtp_username, smtp_password)
-                server.send_message(message)
-
-        current_app.logger.info("Password reset email sent to %s.", admin.email)
-        return True
-    except smtplib.SMTPAuthenticationError:
-        current_app.logger.exception(
-            "SMTP authentication failed. Use a valid provider app password."
+        result = resend.Emails.send(
+            {
+                "from": f"{company_name} <{sender_email}>",
+                "to": [admin.email],
+                "subject": f"Reset Your Password - {company_name}",
+                "text": text_body,
+                "html": html_body,
+            }
         )
-    except (OSError, smtplib.SMTPException):
-        current_app.logger.exception("Unable to send password reset email.")
 
-    return False
+        current_app.logger.info(
+            "Password reset email sent to %s. Resend ID: %s",
+            admin.email,
+            result.get("id"),
+        )
+        return True
+
+    except Exception:
+        current_app.logger.exception(
+            "Unable to send password reset email through Resend."
+        )
+        return False
