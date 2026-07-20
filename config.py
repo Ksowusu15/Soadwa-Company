@@ -11,7 +11,15 @@ load_dotenv(BASE_DIR / ".env")
 def build_database_uri():
     """Build a MySQL connection safely without manually URL-encoding passwords."""
     explicit_url = os.getenv("DATABASE_URL", "").strip()
+
     if explicit_url:
+        if explicit_url.startswith("mysql://"):
+            explicit_url = explicit_url.replace(
+                "mysql://",
+                "mysql+pymysql://",
+                1,
+            )
+
         return explicit_url
 
     return URL.create(
