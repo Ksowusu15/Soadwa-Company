@@ -1,17 +1,11 @@
+.env
+.env.*
+!.env.example
 venv/
 .venv/
 __pycache__/
 *.py[cod]
-.env
 *.db
 instance/
 .pytest_cache/
-*.pyc
-
-# Local and deployment secrets
-.env
-.env.*
-!.env.example
-
-# Uploaded runtime files can be stored on a Railway Volume.
-# Keep existing demo assets tracked, but do not commit new private uploads manually.
+.DS_Store

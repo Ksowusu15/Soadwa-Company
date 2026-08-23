@@ -1,7 +1,7 @@
 <div class="auth-brand">
     {% if site_settings and site_settings.logo %}
         <img
-            src="{{ url_for('static', filename=site_settings.logo) }}"
+            src="{{ media_url(site_settings.logo) }}"
             alt="{{ site_settings.company_name }} logo"
             class="auth-brand-logo"
         >

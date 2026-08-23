@@ -129,6 +129,18 @@ class TeamMember(db.Model):
     is_active = db.Column(db.Boolean, default=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+
+class Testimonial(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_name = db.Column(db.String(120), nullable=False)
+    client_title = db.Column(db.String(160))
+    testimonial = db.Column(db.Text, nullable=False)
+    rating = db.Column(db.Integer, default=5, nullable=False)
+    image = db.Column(db.String(255))
+    display_order = db.Column(db.Integer, default=0, index=True)
+    is_active = db.Column(db.Boolean, default=True, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
 class WebsiteSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     company_name = db.Column(db.String(120), default="Soadwa Company Ltd")

@@ -1,4 +1,4 @@
-"""Verify that Flask-SQLAlchemy can connect to the configured MySQL database."""
+"""Verify that SQLAlchemy can connect to the configured database."""
 
 import sys
 
@@ -11,8 +11,8 @@ from models import db
 with app.app_context():
     try:
         db.session.execute(text("SELECT 1"))
-        print("MySQL connection successful.")
+        print("Database connection successful.")
     except SQLAlchemyError as error:
-        print("MySQL connection failed.")
+        print("Database connection failed.")
         print(error)
         sys.exit(1)

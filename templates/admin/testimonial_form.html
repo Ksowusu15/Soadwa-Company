@@ -1,0 +1,48 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="page-title-row">
+    <div><p class="eyebrow">Testimonials</p><h1>{{ title }}</h1><p>Create a polished client story and preview how it will look before saving.</p></div>
+    <a href="{{ url_for('admin.testimonials') }}" class="btn secondary">Back to Testimonials</a>
+</div>
+
+<form method="POST" enctype="multipart/form-data" class="admin-form testimonial-editor" data-testimonial-editor>
+    {{ form.hidden_tag() }}
+    <div class="testimonial-editor-grid">
+        <div class="admin-card form-section">
+            <div class="form-section-heading"><div><p class="eyebrow">Client Story</p><h2>Testimonial Details</h2></div></div>
+            <div class="form-grid two-columns">
+                <div class="field">{{ form.client_name.label }}{{ form.client_name(placeholder='Client name') }}{% for error in form.client_name.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</div>
+                <div class="field">{{ form.client_title.label }}{{ form.client_title(placeholder='e.g. Business Owner, Accra') }}{% for error in form.client_title.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</div>
+            </div>
+            <div class="field">{{ form.testimonial.label }}{{ form.testimonial(rows=7, placeholder='What did the client say about their experience?') }}{% for error in form.testimonial.errors %}<small class="field-error">{{ error }}</small>{% endfor %}<small>Short, specific reviews are usually the most convincing.</small></div>
+            <div class="form-grid two-columns">
+                <div class="field">{{ form.rating.label }}{{ form.rating() }}</div>
+                <div class="field">{{ form.display_order.label }}{{ form.display_order(min='0') }}<small>Lower numbers appear first.</small></div>
+            </div>
+            <div class="field">{{ form.image.label }}{{ form.image(accept='.jpg,.jpeg,.png,.webp') }}<small>Optional client photo. A square portrait works best.</small></div>
+            {% if testimonial and testimonial.image %}
+            <div class="current-team-image"><p>Current photo</p><img src="{{ media_url(testimonial.image) }}" alt="{{ testimonial.client_name }}"></div>
+            {% endif %}
+            <label class="checkbox-row">{{ form.is_active() }}<span>Display this testimonial on the homepage</span></label>
+        </div>
+
+        <aside class="testimonial-preview-panel">
+            <div class="testimonial-preview-label"><span>Live preview</span><small>Homepage appearance</small></div>
+            <article class="testimonial-preview-card">
+                <span class="testimonial-preview-quote"><i class="fas fa-quote-left"></i></span>
+                <div class="testimonial-preview-stars" data-preview-stars aria-label="5 star preview"></div>
+                <blockquote data-preview-review>{{ testimonial.testimonial if testimonial else 'Your client testimonial will appear here as you type.' }}</blockquote>
+                <div class="testimonial-preview-client">
+                    <div class="testimonial-preview-avatar" data-preview-avatar>{{ (testimonial.client_name[:1] if testimonial and testimonial.client_name else 'C')|upper }}</div>
+                    <div><strong data-preview-name>{{ testimonial.client_name if testimonial else 'Client Name' }}</strong><span data-preview-title>{{ testimonial.client_title if testimonial and testimonial.client_title else 'Valued Client' }}</span></div>
+                </div>
+            </article>
+            <p class="testimonial-preview-note"><i class="fas fa-circle-info"></i> The final card automatically adapts to phones, tablets and laptops.</p>
+        </aside>
+    </div>
+    <div class="form-actions">{{ form.submit(class='btn primary') }}<a href="{{ url_for('admin.testimonials') }}" class="btn secondary">Cancel</a></div>
+</form>
+{% endblock %}

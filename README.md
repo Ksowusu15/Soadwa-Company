@@ -1,214 +1,200 @@
-# Soadwa Company Ltd Motors — MySQL Edition
+# Soadwa Company Ltd Motors
 
-A full-stack luxury car dealership platform built with Flask, SQLAlchemy, Flask-Login, Flask-WTF, Jinja2, vanilla JavaScript, responsive CSS and MySQL.
+A production-oriented Flask dealership platform with responsive inventory, admin management, authentication, password reset, PostgreSQL/MySQL support, persistent Cloudinary media, and Render deployment configuration.
 
 ## Main features
 
 - Public dealership website and responsive inventory
-- Vehicle search, filters, sorting and pagination
-- Vehicle galleries, favorites and comparisons
+- Vehicle search, filters, sorting, pagination and comparison
+- Vehicle galleries and featured inventory
 - Customer messages and test-drive requests
 - CSV exports for messages and test drives
-- Secure admin login using username or email
-- Password reset by email
+- Admin login using username or email
+- Case-sensitive username and password behavior
+- One-time 15-minute password reset tokens
 - Vehicle, team and website-settings management
-- Dynamic company branding and social links
-- Responsive admin dashboard
+- Dynamic branding and social links
+- PostgreSQL production support
+- Cloudinary-ready persistent uploads
+- Brevo transactional email API integration
+- Flask-Migrate support
+- Production health check and security headers
 
-## 1. Install MySQL
+## Local setup
 
-Install MySQL Server and remember the root password selected during installation. Make sure the MySQL service is running.
-
-## 2. Create and activate the virtual environment
-
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-## 3. Install the Python packages
-
-```powershell
-pip install -r requirements.txt
-```
-
-## 4. Create your environment file
-
-Copy `.env.example` to `.env`:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Open `.env` and enter your actual MySQL password:
-
-```env
-SECRET_KEY=replace-with-a-long-random-secret
-ADMIN_PASSWORD=ChangeMe123!
-
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DATABASE=elite_motors
-MYSQL_USER=root
-MYSQL_PASSWORD=your_actual_mysql_password
-```
-
-Do not commit `.env` to GitHub.
-
-## 5. Create the MySQL database
-
-```powershell
-python create_database.py
-```
-
-Expected result:
-
-```text
-MySQL database 'elite_motors' is ready.
-```
-
-## 6. Run the website
-
-```powershell
-python app.py
-```
-
-The application creates its tables automatically the first time it connects successfully.
-
-Open:
-
-```text
-http://127.0.0.1:5000
-```
-
-Default administrator account on a new database:
-
-```text
-Username: admin
-Password: ChangeMe123!
-```
-
-Change this password after signing in. You can also change the initial password in `.env` before the first run.
-
-## Test the database connection
-
-```powershell
-python test_database.py
-```
-
-## Important migration note
-
-This MySQL version creates a new database. Data from an older SQLite database is not copied automatically. Existing vehicles, settings, messages, test-drive requests and admin accounts must be migrated separately if they need to be retained.
-
-## Using a complete database URL
-
-You may set `DATABASE_URL` instead of the individual `MYSQL_*` values:
-
-```env
-DATABASE_URL=mysql+pymysql://root:password@127.0.0.1:3306/elite_motors?charset=utf8mb4
-```
-
-The individual `MYSQL_*` fields are safer for passwords containing characters such as `@`, `#`, `/` or `:` because the project builds the SQLAlchemy URL correctly.
-
-## Production notes
-
-Use a strong `SECRET_KEY`, HTTPS, a production WSGI server, database backups, a restricted MySQL user rather than root, and environment variables for all secrets.
-
-
-## Authentication behavior
-
-- Sign in using either the administrator username or email address.
-- Usernames are case-sensitive even when MySQL uses a case-insensitive collation.
-- Email matching is case-insensitive.
-- Passwords are always case-sensitive and securely hashed.
-- Password-reset links expire after 15 minutes and can only be used once.
-- Requesting a new reset link invalidates older unused links.
-
-When upgrading an existing MySQL installation, start the app once. SQLAlchemy's
-`db.create_all()` will create the new `password_reset_token` table automatically.
-
-## Soadwa Motors V2 notes
-
-This package consolidates the project improvements into one MySQL-first release:
-
-- Username or email administrator sign-in
-- Case-sensitive usernames and passwords; case-insensitive email login
-- Database-backed, one-time password reset tokens with 15-minute expiry
-- Gmail/SMTP support for ports 465 (SSL) and 587 (STARTTLS)
-- Responsive home, inventory, vehicle overview, compare, team, contact, and admin pages
-- Full-vehicle image presentation using `object-fit: contain`
-- CSV export for messages and test-drive requests
-- Dynamic company name, logo, social links, SEO, and SMTP settings
-- Gunicorn/Koyeb-ready production configuration
-
-### Local setup
+Create and activate a virtual environment:
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-python create_database.py
-python app.py
 ```
 
-Generate a secret key with:
+Install dependencies:
 
 ```powershell
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-### Production start command
-
-```bash
-gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 app:app
-```
-
-### Important upload-storage note
-
-Local files under `static/uploads` may not persist on serverless/free hosts after a redeploy. Use Cloudinary, S3, or another persistent object-storage provider before relying on production image uploads.
-
-## Complete dependency installation
-
-This release includes a fully pinned `requirements.txt`, including the
-`cryptography` package needed by many modern MySQL installations that use
-`caching_sha2_password` authentication.
-
-Create a fresh virtual environment and install everything with:
-
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Verify the installation:
+Copy the environment template:
 
 ```powershell
-python -c "import flask, pymysql, cryptography; print('Dependencies installed successfully')"
+Copy-Item .env.example .env
 ```
 
-## Railway deployment
+For PostgreSQL, configure either `DATABASE_URL` or the individual `POSTGRES_*` fields in `.env`.
 
-1. Push this project to a private GitHub repository.
-2. In Railway, create a project from the GitHub repository.
-3. Add a Railway MySQL service.
-4. Add the required application variables from `.env.example`.
-5. Set `DATABASE_URL` to a SQLAlchemy-compatible MySQL URL beginning with `mysql+pymysql://`.
-6. Attach a Railway Volume at `/app/static/uploads` so uploaded cars, logos, and team images persist across deployments.
-7. Generate a public Railway domain and test `/admin/login`.
-
-Recommended production variables:
+Example:
 
 ```env
-FLASK_ENV=production
-FLASK_DEBUG=0
-SECRET_KEY=generate-a-new-random-value
-ADMIN_PASSWORD=choose-a-strong-initial-password
-DATABASE_URL=mysql+pymysql://USER:PASSWORD@HOST:PORT/DATABASE?charset=utf8mb4
+APP_ENV=development
+SECRET_KEY=generate-a-long-random-secret
+DATABASE_URL=postgresql+psycopg://postgres:password@127.0.0.1:5432/soadwa_company
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=soadwacompany@gmail.com
+ADMIN_PASSWORD=choose-a-private-strong-password
 ```
 
-Generate a secret key locally with:
+Initialize a new local database:
 
 ```powershell
-python -c "import secrets; print(secrets.token_hex(32))"
+python create_database.py
 ```
+
+Run the site:
+
+```powershell
+python app.py
+```
+
+## Database migrations
+
+Flask-Migrate is included. Once the database is available:
+
+```powershell
+flask --app app db init
+flask --app app db migrate -m "Initial schema"
+flask --app app db upgrade
+```
+
+Commit the generated `migrations/` folder. For later model changes:
+
+```powershell
+flask --app app db migrate -m "Describe the change"
+flask --app app db upgrade
+```
+
+## Render deployment
+
+This repository includes `render.yaml`.
+
+Create a Render Web Service from this GitHub repository using:
+
+```text
+Build Command: pip install -r requirements.txt
+Start Command: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 app:app
+Health Check: /health
+```
+
+Configure these environment variables on Render:
+
+```env
+APP_ENV=production
+FLASK_DEBUG=0
+SECRET_KEY=your-private-production-secret
+DATABASE_URL=your-postgresql-connection-url
+CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+BREVO_API_KEY=your-private-brevo-api-key
+BREVO_FROM_EMAIL=your-verified-brevo-sender@example.com
+BREVO_FROM_NAME=Soadwa Company Ltd
+```
+
+### First deployment to a brand-new empty database
+
+Temporarily add:
+
+```env
+AUTO_CREATE_DB=1
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=your-admin-email
+ADMIN_PASSWORD=your-private-strong-password
+```
+
+Deploy once and confirm the site/admin account works. Then change:
+
+```env
+AUTO_CREATE_DB=0
+```
+
+Do not leave automatic schema creation enabled long-term. Use migrations after the initial setup.
+
+## Persistent images
+
+Render's local filesystem is not suitable for permanent admin uploads. Configure `CLOUDINARY_URL` so vehicle, team and site images are stored in Cloudinary. Existing demo images committed under `static/uploads/` will continue to display normally.
+
+## Email
+
+Password reset uses the Brevo HTTPS API. Create an API key in Brevo and register/verify the sender email used in `BREVO_FROM_EMAIL`. Keep the API key only in `.env` locally and in your hosting provider's environment variables.
+
+## Security
+
+- Never commit `.env`.
+- Use a unique production `SECRET_KEY`.
+- Never use the example/default admin password in production.
+- Keep `FLASK_DEBUG=0` in production.
+- Use HTTPS.
+- Back up the production database regularly.
+- Rotate any key or password that has been accidentally exposed.
+
+
+## Neon PostgreSQL + Render
+
+This project is configured to use Neon as the recommended hosted PostgreSQL database for Render.
+
+1. Create a Neon project and database.
+2. In Neon, open **Connect** and copy the **pooled** connection string. Neon pooled endpoints contain `-pooler` in the hostname.
+3. Keep the SSL query parameter supplied by Neon, normally `?sslmode=require`.
+4. In Render, open the web service -> **Environment** and create `DATABASE_URL` with the Neon connection string as the value.
+5. Do not commit the Neon URL to GitHub or place it in `.env.example`.
+6. The application automatically converts `postgresql://` or `postgres://` to the Psycopg SQLAlchemy driver URL.
+
+Example shape only (not a real credential):
+
+```text
+postgresql://USER:PASSWORD@ep-example-pooler.region.aws.neon.tech/neondb?sslmode=require
+```
+
+For first-time schema creation, use migrations when possible:
+
+```bash
+flask --app app db upgrade
+```
+
+If the database is completely empty and no migrations exist yet, you can temporarily set `AUTO_CREATE_DB=1` together with a strong `ADMIN_PASSWORD`, start once, then return `AUTO_CREATE_DB` to `0`.
+
+
+## Brevo transactional email setup
+
+The password-reset flow uses Brevo's HTTPS transactional email API.
+
+```env
+BREVO_API_KEY=your-private-brevo-api-key
+BREVO_FROM_EMAIL=your-verified-brevo-sender@example.com
+BREVO_FROM_NAME=Soadwa Company Ltd
+```
+
+In Brevo, register and verify `BREVO_FROM_EMAIL` as a sender before testing.
+Never commit your real API key to GitHub.
+
+
+### Enquiry email notifications
+
+Set the email that should receive new website enquiries:
+
+```env
+BREVO_NOTIFY_EMAIL=your-business-email@example.com
+```
+
+If this is not set, the application falls back to the email saved in Website
+Settings, then to the first admin email. New enquiries are always saved to the
+database even if the email API is temporarily unavailable.

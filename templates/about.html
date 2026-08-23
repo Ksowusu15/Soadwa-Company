@@ -85,7 +85,7 @@
                             <div class="team-photo">
                                 {% if member.image %}
                                     <img
-                                        src="{{ url_for('static', filename=member.image) }}"
+                                        src="{{ media_url(member.image) }}"
                                         alt="{{ member.name }}"
                                         loading="lazy"
                                     >

@@ -68,7 +68,7 @@
                 <div class="current-team-image">
                     <p>Current image</p>
                     <img
-                        src="{{ url_for('static', filename=member.image) }}"
+                        src="{{ media_url(member.image) }}"
                         alt="{{ member.name }}"
                     >
                 </div>

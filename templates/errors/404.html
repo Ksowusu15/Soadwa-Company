@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block title %}Page Not Found | {{ site_settings.company_name if site_settings else 'Soadwa Company Ltd' }}{% endblock %}
+{% block content %}
+<section class="section"><div class="container empty-state"><h1>404</h1><h3>Page not found</h3><p>The page you requested does not exist.</p><a class="btn primary" href="{{ url_for('main.index') }}">Back to Home</a></div></section>
+{% endblock %}

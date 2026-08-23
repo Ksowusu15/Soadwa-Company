@@ -1,7 +1,50 @@
 {% extends 'base.html' %}{% block content %}
-    <section class="hero" style="{% if site_settings.hero_image %}background-image:linear-gradient(90deg,rgba(0,0,0,.78),rgba(0,0,0,.2)),url('{{ url_for('static', filename=site_settings.hero_image) }}'){% endif %}"><div class="container hero-content"><p class="eyebrow light">Premium Automotive Excellence</p><h1>{{ site_settings.hero_title }}</h1><p>{{ site_settings.hero_subtitle }}</p><div class="hero-actions"><a class="btn primary" href="{{ url_for('main.inventory') }}">Explore Inventory</a><a class="btn ghost" href="{{ url_for('main.contact') }}">Contact Dealer</a></div></div><div class="scroll-cue">Scroll <i class="fas fa-arrow-down"></i></div></section>
+    <section class="hero" style="{% if site_settings.hero_image %}background-image:linear-gradient(90deg,rgba(0,0,0,.78),rgba(0,0,0,.2)),url('{{ media_url(site_settings.hero_image) }}'){% endif %}"><div class="container hero-content"><p class="eyebrow light">Premium Automotive Excellence</p><h1>{{ site_settings.hero_title }}</h1><p>{{ site_settings.hero_subtitle }}</p><div class="hero-actions"><a class="btn primary" href="{{ url_for('main.inventory') }}">Explore Inventory</a><a class="btn ghost" href="{{ url_for('main.contact') }}">Contact Dealer</a></div></div><div class="scroll-cue">Scroll <i class="fas fa-arrow-down"></i></div></section>
     <section class="stats"><div class="container stats-grid"><div><strong class="counter" data-target="{{ site_settings.cars_sold }}">0</strong><span>Cars Sold</span></div><div><strong class="counter" data-target="{{ site_settings.customers }}">0</strong><span>Happy Customers</span></div><div><strong class="counter" data-target="{{ site_settings.experience }}">0</strong><span>Years Experience</span></div></div></section>
     <section class="section"><div class="container"><div class="section-head reveal"><div><p class="eyebrow">Curated Collection</p><h2>Featured Vehicles</h2></div><a href="{{ url_for('main.inventory') }}">View all vehicles <i class="fas fa-arrow-right"></i></a></div><div class="car-grid">{% for car in featured %}{% include '_car_card.html' %}{% else %}<div class="empty-state"><i class="fas fa-car"></i><h3>No vehicles added yet</h3><p>Log in to the admin area to add your first vehicle.</p></div>{% endfor %}</div></div></section>
     <section class="section dark"><div class="container split"><div class="reveal"><p class="eyebrow light">Why {{ site_settings.company_name if site_settings else "Us" }}</p><h2>Luxury without compromise.</h2><p>Every vehicle is selected for quality, performance and provenance. Our team provides transparent guidance from first viewing to final handover.</p><a class="btn primary" href="{{ url_for('main.about') }}">Discover Our Story</a></div><div class="feature-list reveal"><div><i class="fas fa-shield-halved"></i><h3>Quality Assured</h3><p>Thoroughly inspected premium vehicles.</p></div><div><i class="fas fa-handshake"></i><h3>Trusted Service</h3><p>Professional advice with no pressure.</p></div><div><i class="fas fa-credit-card"></i><h3>Flexible Financing</h3><p>Solutions designed around your goals.</p></div></div></div></section>
+    {% if testimonials %}
+    <section class="section testimonials-section" data-testimonial-carousel>
+        <div class="container">
+            <div class="section-head testimonial-section-head reveal">
+                <div>
+                    <p class="eyebrow">Client Experiences</p>
+                    <h2>Trusted by people who value the drive.</h2>
+                    <p>Real experiences from clients who chose {{ site_settings.company_name if site_settings else 'us' }} for their automotive journey.</p>
+                </div>
+                {% if testimonials|length > 1 %}
+                <div class="testimonial-controls" aria-label="Testimonial navigation">
+                    <button type="button" class="testimonial-nav" data-testimonial-prev aria-label="Previous testimonials"><i class="fas fa-arrow-left"></i></button>
+                    <button type="button" class="testimonial-nav" data-testimonial-next aria-label="Next testimonials"><i class="fas fa-arrow-right"></i></button>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="testimonial-carousel-shell reveal">
+                <div class="testimonial-carousel-viewport">
+                    <div class="testimonial-carousel-track" data-testimonial-track>
+                        {% for item in testimonials %}
+                        <article class="testimonial-card testimonial-slide">
+                            <div class="testimonial-card-top">
+                                <span class="testimonial-quote-icon"><i class="fas fa-quote-left"></i></span>
+                                <div class="testimonial-rating" aria-label="{{ item.rating }} out of 5 stars">
+                                    {% for star in range(1, 6) %}<i class="{{ 'fas' if star <= item.rating else 'far' }} fa-star"></i>{% endfor %}
+                                </div>
+                            </div>
+                            <blockquote>“{{ item.testimonial }}”</blockquote>
+                            <div class="testimonial-client">
+                                {% if item.image %}<img src="{{ media_url(item.image) }}" alt="{{ item.client_name }}">{% else %}<span class="testimonial-avatar">{{ item.client_name[:1]|upper }}</span>{% endif %}
+                                <div><strong>{{ item.client_name }}</strong><span>{{ item.client_title or 'Valued Client' }}</span></div>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if testimonials|length > 1 %}<div class="testimonial-dots" data-testimonial-dots aria-label="Testimonial pages"></div>{% endif %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <section class="section"><div class="container cta reveal"><div><p class="eyebrow">Your next drive starts here</p><h2>Ready to experience something exceptional?</h2></div><a class="btn primary" href="{{ url_for('main.contact') }}">Speak With a Specialist</a></div></section>
 {% endblock %}

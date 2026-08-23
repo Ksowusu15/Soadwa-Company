@@ -137,3 +137,35 @@ class TeamMemberForm(FlaskForm):
     )
     is_active = BooleanField("Show on About page", default=True)
     submit = SubmitField("Save Team Member")
+
+
+class TestimonialForm(FlaskForm):
+    client_name = StringField(
+        "Client Name", validators=[DataRequired(), Length(max=120)]
+    )
+    client_title = StringField(
+        "Client Title / Company", validators=[Optional(), Length(max=160)]
+    )
+    testimonial = TextAreaField(
+        "Testimonial", validators=[DataRequired(), Length(min=10, max=1200)]
+    )
+    rating = SelectField(
+        "Rating",
+        choices=[
+            ("5", "5 Stars"),
+            ("4", "4 Stars"),
+            ("3", "3 Stars"),
+            ("2", "2 Stars"),
+            ("1", "1 Star"),
+        ],
+        default="5",
+    )
+    image = FileField(
+        "Client Photo",
+        validators=[Optional(), FileAllowed(IMAGE_TYPES, "Images only")],
+    )
+    display_order = IntegerField(
+        "Display Order", validators=[Optional(), NumberRange(min=0)], default=0
+    )
+    is_active = BooleanField("Show on website", default=True)
+    submit = SubmitField("Save Testimonial")

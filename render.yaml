@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: soadwa-company
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 app:app
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: AUTO_CREATE_DB
+        value: "0"
+      - key: SECRET_KEY
+        sync: false
+      # Paste your Neon pooled PostgreSQL connection string here in Render.
+      - key: DATABASE_URL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_FROM_EMAIL
+        sync: false
+      - key: BREVO_FROM_NAME
+        value: Soadwa Company Ltd
+      - key: BREVO_NOTIFY_EMAIL
+        sync: false

@@ -2,6 +2,7 @@ import csv
 import io
 import os
 import uuid
+from io import BytesIO
 import hashlib
 import secrets
 from datetime import datetime, timedelta
@@ -15,6 +16,7 @@ from flask import (
     render_template,
     request,
     Response,
+    session,
     url_for,
 )
 
@@ -22,6 +24,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
+from PIL import Image, UnidentifiedImageError
 from forms import (
     CarForm,
     ForgotPasswordForm,
@@ -30,8 +33,9 @@ from forms import (
     MessageForm,
     TeamMemberForm,
     TestDriveForm,
+    TestimonialForm,
 )
-from services.email_service import send_password_reset_email
+from services.email_service import send_enquiry_emails, send_password_reset_email
 from models import (
     Admin,
     Car,
@@ -40,6 +44,7 @@ from models import (
     PasswordResetToken,
     TeamMember,
     TestDrive,
+    Testimonial,
     WebsiteSettings,
     db,
 )
@@ -50,14 +55,44 @@ ALLOWED = {"jpg", "jpeg", "png", "webp"}
 
 
 def save_image(file, folder):
+    """Validate and persist an uploaded image locally or in Cloudinary."""
     if not file or not file.filename:
         return None
+
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
     if ext not in ALLOWED:
-        raise ValueError("Unsupported image type.")
+        raise ValueError("Unsupported image type. Use JPG, PNG, or WebP.")
+
+    raw = file.read()
+    file.seek(0)
+
+    try:
+        image = Image.open(BytesIO(raw))
+        image.verify()
+    except (UnidentifiedImageError, OSError):
+        raise ValueError("The uploaded file is not a valid image.")
+
+    cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
+    if cloudinary_url:
+        import cloudinary
+        import cloudinary.uploader
+
+        cloudinary.config(cloudinary_url=cloudinary_url, secure=True)
+        file.seek(0)
+        result = cloudinary.uploader.upload(
+            file,
+            folder=f"soadwa-company/{folder}",
+            resource_type="image",
+            use_filename=True,
+            unique_filename=True,
+            overwrite=False,
+        )
+        return result["secure_url"]
+
     filename = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
     target_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], folder)
     os.makedirs(target_dir, exist_ok=True)
+    file.seek(0)
     file.save(os.path.join(target_dir, filename))
     return f"uploads/{folder}/{filename}"
 
@@ -147,6 +182,61 @@ def maintenance_guard():
         return render_template("maintenance.html", settings=settings), 503
 
 
+
+def _business_notification_email(settings=None):
+    """Return the preferred business email for enquiry notifications."""
+    explicit = os.getenv("BREVO_NOTIFY_EMAIL", "").strip()
+    if explicit:
+        return explicit
+
+    admin = Admin.query.order_by(Admin.id.asc()).first()
+    if admin and (admin.email or "").strip():
+        return admin.email.strip()
+
+    if settings and (settings.email or "").strip():
+        return settings.email.strip()
+
+    return ""
+
+
+def _send_saved_enquiry_notifications(enquiry, settings=None):
+    """Send business + customer emails without affecting the saved enquiry."""
+    notify_email = _business_notification_email(settings)
+
+    if not notify_email:
+        current_app.logger.warning(
+            "Enquiry %s saved, but no business notification email is configured.",
+            enquiry.id,
+        )
+        return
+
+    current_app.logger.info(
+        "Sending enquiry %s notification to business email: %s",
+        enquiry.id,
+        notify_email,
+    )
+
+    admin_sent, customer_sent = send_enquiry_emails(
+        settings,
+        enquiry,
+        notify_email,
+    )
+
+    if not admin_sent:
+        current_app.logger.warning(
+            "Enquiry %s saved, but business email to %s failed.",
+            enquiry.id,
+            notify_email,
+        )
+
+    if not customer_sent:
+        current_app.logger.warning(
+            "Enquiry %s saved, but customer acknowledgement to %s failed.",
+            enquiry.id,
+            enquiry.email,
+        )
+
+
 @main_bp.route("/")
 def index():
     featured = (
@@ -157,7 +247,18 @@ def index():
     )
     if not featured:
         featured = Car.query.order_by(Car.created_at.desc()).limit(6).all()
-    return render_template("index.html", featured=featured)
+
+    testimonials = (
+        Testimonial.query.filter_by(is_active=True)
+        .order_by(Testimonial.display_order.asc(), Testimonial.created_at.desc())
+        .limit(6)
+        .all()
+    )
+    return render_template(
+        "index.html",
+        featured=featured,
+        testimonials=testimonials,
+    )
 
 
 @main_bp.route("/inventory")
@@ -246,17 +347,23 @@ def car_details(car_id):
     car = Car.query.get_or_404(car_id)
     message_form, test_form = MessageForm(prefix="msg"), TestDriveForm(prefix="test")
     if message_form.submit.data and message_form.validate_on_submit():
-        db.session.add(
-            Message(
-                name=message_form.name.data,
-                email=message_form.email.data,
-                phone=message_form.phone.data,
-                message=message_form.message.data,
-                car_id=car.id,
-            )
+        enquiry = Message(
+            name=message_form.name.data,
+            email=message_form.email.data,
+            phone=message_form.phone.data,
+            message=message_form.message.data,
+            car_id=car.id,
         )
+        db.session.add(enquiry)
         db.session.commit()
-        flash("Your inquiry has been sent.", "success")
+
+        settings = WebsiteSettings.query.first()
+        _send_saved_enquiry_notifications(enquiry, settings)
+
+        flash(
+            "Enquiry sent successfully! Our team will get back to you shortly.",
+            "success",
+        )
         return redirect(url_for("main.car_details", car_id=car.id))
     if test_form.submit.data and test_form.validate_on_submit():
         db.session.add(
@@ -307,18 +414,36 @@ def services():
 def contact():
     form = MessageForm()
     if form.validate_on_submit():
-        db.session.add(
-            Message(
-                name=form.name.data,
-                email=form.email.data,
-                phone=form.phone.data,
-                message=form.message.data,
-            )
+        enquiry = Message(
+            name=form.name.data,
+            email=form.email.data,
+            phone=form.phone.data,
+            message=form.message.data,
         )
+        db.session.add(enquiry)
         db.session.commit()
-        flash("Thank you. We will contact you shortly.", "success")
+
+        settings = WebsiteSettings.query.first()
+        _send_saved_enquiry_notifications(enquiry, settings)
+
+        flash(
+            "Enquiry sent successfully! Thank you for contacting us. "
+            "Our team will get back to you shortly.",
+            "success",
+        )
         return redirect(url_for("main.contact"))
     return render_template("contact.html", form=form)
+
+
+
+@main_bp.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
+@main_bp.route("/terms")
+def terms():
+    return render_template("terms.html")
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
@@ -329,11 +454,9 @@ def login():
     if form.validate_on_submit():
         identifier = form.username.data.strip()
 
-        # MySQL commonly uses a case-insensitive collation. BINARY forces an
-        # exact, case-sensitive username comparison (Admin != admin).
-        admin = Admin.query.filter(
-            db.func.binary(Admin.username) == identifier
-        ).first()
+        # PostgreSQL string equality is case-sensitive, which preserves the
+        # intended case-sensitive username login behavior.
+        admin = Admin.query.filter(Admin.username == identifier).first()
 
         # Email addresses remain case-insensitive.
         if admin is None:
@@ -343,6 +466,8 @@ def login():
 
         if admin and admin.check_password(form.password.data):
             login_user(admin, remember=form.remember.data)
+            session.permanent = True
+            session["admin_last_activity"] = datetime.now().timestamp()
             return redirect(request.args.get("next") or url_for("admin.dashboard"))
 
         flash("Invalid username/email or password.", "danger")
@@ -962,14 +1087,118 @@ def delete_team_member(member_id):
 
     return redirect(url_for("admin.team_members"))
 
+@admin_bp.route("/testimonials")
+@login_required
+def testimonials():
+    items = Testimonial.query.order_by(
+        Testimonial.display_order.asc(), Testimonial.created_at.desc()
+    ).all()
+    return render_template("admin/testimonials.html", testimonials=items)
+
+
+@admin_bp.route("/testimonials/add", methods=["GET", "POST"])
+@login_required
+def add_testimonial():
+    form = TestimonialForm()
+    if form.validate_on_submit():
+        item = Testimonial(
+            client_name=form.client_name.data.strip(),
+            client_title=(form.client_title.data or "").strip() or None,
+            testimonial=form.testimonial.data.strip(),
+            rating=int(form.rating.data or 5),
+            display_order=form.display_order.data or 0,
+            is_active=form.is_active.data,
+        )
+        try:
+            item.image = save_image(form.image.data, "testimonials")
+            db.session.add(item)
+            db.session.commit()
+            flash("Client testimonial added successfully.", "success")
+            return redirect(url_for("admin.testimonials"))
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "danger")
+    return render_template(
+        "admin/testimonial_form.html",
+        form=form,
+        title="Add Client Testimonial",
+        testimonial=None,
+    )
+
+
+@admin_bp.route("/testimonials/<int:testimonial_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_testimonial(testimonial_id):
+    item = Testimonial.query.get_or_404(testimonial_id)
+    form = TestimonialForm(obj=item)
+    if request.method == "GET":
+        form.rating.data = str(item.rating or 5)
+
+    if form.validate_on_submit():
+        item.client_name = form.client_name.data.strip()
+        item.client_title = (form.client_title.data or "").strip() or None
+        item.testimonial = form.testimonial.data.strip()
+        item.rating = int(form.rating.data or 5)
+        item.display_order = form.display_order.data or 0
+        item.is_active = form.is_active.data
+
+        try:
+            image_file = request.files.get("image")
+            if image_file and image_file.filename:
+                item.image = save_image(image_file, "testimonials")
+            db.session.commit()
+            flash("Client testimonial updated successfully.", "success")
+            return redirect(url_for("admin.testimonials"))
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "danger")
+
+    return render_template(
+        "admin/testimonial_form.html",
+        form=form,
+        title="Edit Client Testimonial",
+        testimonial=item,
+    )
+
+
+@admin_bp.route("/testimonials/<int:testimonial_id>/toggle", methods=["POST"])
+@login_required
+def toggle_testimonial(testimonial_id):
+    item = Testimonial.query.get_or_404(testimonial_id)
+    item.is_active = not item.is_active
+    db.session.commit()
+    flash("Testimonial visibility updated.", "success")
+    return redirect(url_for("admin.testimonials"))
+
+
+@admin_bp.route("/testimonials/<int:testimonial_id>/delete", methods=["POST"])
+@login_required
+def delete_testimonial(testimonial_id):
+    item = Testimonial.query.get_or_404(testimonial_id)
+    db.session.delete(item)
+    db.session.commit()
+    flash("Client testimonial deleted successfully.", "success")
+    return redirect(url_for("admin.testimonials"))
+
+
 @admin_bp.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
-    settings = WebsiteSettings.query.first_or_404()
+    settings = WebsiteSettings.query.first()
+    if settings is None:
+        settings = WebsiteSettings(
+            company_name="Soadwa Company Ltd",
+            primary_color="#c1121f",
+            secondary_color="#111111",
+            currency="GHS",
+        )
+        db.session.add(settings)
+        db.session.commit()
     if request.method == "POST":
         boolean_fields = {"maintenance_mode"}
         integer_fields = {"cars_sold", "customers", "experience", "smtp_port"}
         file_fields = {"logo", "favicon", "hero_image", "social_image"}
+
         for column in WebsiteSettings.__table__.columns:
             key = column.name
             if key in {"id", "updated_at"} or key in file_fields:
@@ -983,16 +1212,45 @@ def settings():
                     pass
             elif key in request.form:
                 setattr(settings, key, request.form.get(key))
+
         try:
-            for field in file_fields:
-                file = request.files.get(field)
-                path = save_image(file, "site") if file and file.filename else None
-                if path:
-                    setattr(settings, field, path)
+            # Handle media explicitly so each uploaded file is guaranteed to be
+            # written and its saved path/URL persisted in WebsiteSettings.
+            media_uploads = {
+                "logo": request.files.get("logo"),
+                "favicon": request.files.get("favicon"),
+                "hero_image": request.files.get("hero_image"),
+                "social_image": request.files.get("social_image"),
+            }
+
+            for field, uploaded_file in media_uploads.items():
+                if not uploaded_file or not uploaded_file.filename:
+                    continue
+
+                saved_path = save_image(uploaded_file, "site")
+                if not saved_path:
+                    raise ValueError(f"The {field.replace('_', ' ')} could not be saved.")
+
+                setattr(settings, field, saved_path)
+                current_app.logger.info(
+                    "Saved website media field %s as %s",
+                    field,
+                    saved_path,
+                )
+
+            db.session.add(settings)
             db.session.commit()
-            flash("Website settings updated.", "success")
+            flash("Website settings updated successfully.", "success")
+
         except ValueError as exc:
             db.session.rollback()
+            current_app.logger.warning("Settings media upload rejected: %s", exc)
             flash(str(exc), "danger")
+
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Failed to update website settings.")
+            flash("Website settings could not be saved. Please try again.", "danger")
+
         return redirect(url_for("admin.settings"))
     return render_template("admin/settings.html", settings=settings)

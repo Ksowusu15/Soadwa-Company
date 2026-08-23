@@ -31,7 +31,22 @@
 
             <div class="auth-field">
                 {{ form.password.label }}
-                {{ form.password(autocomplete='current-password', placeholder='Enter your password') }}
+                <div class="password-input-wrap">
+                    {{ form.password(
+                        autocomplete='current-password',
+                        placeholder='Enter your password',
+                        class='password-toggle-input'
+                    ) }}
+                    <button
+                        type="button"
+                        class="password-toggle-btn"
+                        data-password-toggle="{{ form.password.id }}"
+                        aria-label="Show password"
+                        aria-pressed="false"
+                    >
+                        Show
+                    </button>
+                </div>
                 {% for error in form.password.errors %}
                     <small class="field-error">{{ error }}</small>
                 {% endfor %}
@@ -55,5 +70,5 @@
             </a>
         </form>
     </main>
-</body>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>\n</body>
 </html>

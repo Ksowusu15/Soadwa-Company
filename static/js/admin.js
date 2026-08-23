@@ -71,3 +71,83 @@ window.addEventListener('resize', () => {
 });
 
 drawInventoryChart();
+
+// Testimonial live preview
+function initializeTestimonialEditor() {
+    const editor = document.querySelector('[data-testimonial-editor]');
+    if (!editor) return;
+
+    const nameInput = editor.querySelector('[name="client_name"]');
+    const titleInput = editor.querySelector('[name="client_title"]');
+    const reviewInput = editor.querySelector('[name="testimonial"]');
+    const ratingInput = editor.querySelector('[name="rating"]');
+    const imageInput = editor.querySelector('[name="image"]');
+    const previewName = editor.querySelector('[data-preview-name]');
+    const previewTitle = editor.querySelector('[data-preview-title]');
+    const previewReview = editor.querySelector('[data-preview-review]');
+    const previewStars = editor.querySelector('[data-preview-stars]');
+    const previewAvatar = editor.querySelector('[data-preview-avatar]');
+
+    const update = () => {
+        const name = (nameInput?.value || '').trim() || 'Client Name';
+        const title = (titleInput?.value || '').trim() || 'Valued Client';
+        const review = (reviewInput?.value || '').trim() || 'Your client testimonial will appear here as you type.';
+        const rating = Math.min(5, Math.max(1, Number(ratingInput?.value || 5)));
+
+        if (previewName) previewName.textContent = name;
+        if (previewTitle) previewTitle.textContent = title;
+        if (previewReview) previewReview.textContent = review;
+        if (previewAvatar) previewAvatar.textContent = name.charAt(0).toUpperCase() || 'C';
+        if (previewStars) {
+            previewStars.innerHTML = '';
+            for (let i = 1; i <= 5; i += 1) {
+                const star = document.createElement('i');
+                star.className = `${i <= rating ? 'fas' : 'far'} fa-star`;
+                previewStars.appendChild(star);
+            }
+        }
+    };
+
+    [nameInput, titleInput, reviewInput, ratingInput].forEach((input) => {
+        input?.addEventListener('input', update);
+        input?.addEventListener('change', update);
+    });
+
+    imageInput?.addEventListener('change', () => {
+        const file = imageInput.files?.[0];
+        if (!file || !previewAvatar) return;
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            previewAvatar.style.backgroundImage = `url("${reader.result}")`;
+            previewAvatar.style.backgroundSize = 'cover';
+            previewAvatar.style.backgroundPosition = 'center';
+            previewAvatar.textContent = '';
+        });
+        reader.readAsDataURL(file);
+    });
+
+    update();
+}
+
+document.addEventListener('DOMContentLoaded', initializeTestimonialEditor);
+
+
+// Accessible show / hide password controls
+function initializePasswordToggles() {
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        const targetId = button.dataset.passwordToggle;
+        const input = document.getElementById(targetId);
+        if (!input) return;
+
+        button.addEventListener('click', () => {
+            const shouldShow = input.type === 'password';
+            input.type = shouldShow ? 'text' : 'password';
+            button.textContent = shouldShow ? 'Hide' : 'Show';
+            button.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+            button.setAttribute('aria-pressed', String(shouldShow));
+            input.focus({ preventScroll: true });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initializePasswordToggles);

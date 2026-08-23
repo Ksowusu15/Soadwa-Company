@@ -4,21 +4,41 @@
     <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{% block title %}{{ site_settings.seo_title }}{% endblock %}</title>
     <meta name="description" content="{{ site_settings.seo_description }}"><meta name="keywords" content="{{ site_settings.keywords }}">
-    {% if site_settings.favicon %}<link rel="icon" href="{{ url_for('static', filename=site_settings.favicon) }}">{% endif %}
+    {% if site_settings.favicon %}<link rel="icon" href="{{ media_url(site_settings.favicon) }}">{% endif %}
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>:root{--primary-color:{{ site_settings.primary_color }};--dark-color:{{ site_settings.secondary_color }};}</style>
+    <style>:root{--primary-color:{{ site_settings.primary_color|default("#c1121f", true) }};--dark-color:{{ site_settings.secondary_color|default("#111111", true) }};}</style>
     {% block head %}{% endblock %}
   </head>
   <body>
-    <div class="page-loader"><span></span></div>
+    <div class="page-loader" id="pageLoader" role="status" aria-live="polite" aria-label="Loading page">
+      <div class="page-loader-inner">
+        <div class="page-loader-orbit" aria-hidden="true">
+          <span class="page-loader-ring"></span>
+          <div class="page-loader-brand">
+            {% if site_settings.logo %}
+              <img src="{{ media_url(site_settings.logo) }}" alt="">
+            {% else %}
+              <span class="page-loader-monogram">S</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="page-loader-copy">
+          <strong>{{ site_settings.company_name or "Soadwa Company Ltd" }}</strong>
+          <span class="page-loader-text">
+            Loading<span class="loading-dots"><i></i><i></i><i></i></span>
+          </span>
+        </div>
+      </div>
+    </div>
     <nav class="navbar" id="navbar"><div class="container nav-inner">
       <a class="brand" href="{{ url_for('main.index') }}">
         {% if site_settings.logo %}
         <img
-          src="{{ url_for('static', filename=site_settings.logo) }}"
+          src="{{ media_url(site_settings.logo) }}"
           alt="{{ site_settings.company_name }} logo"
         >
         {% endif %}
@@ -30,7 +50,30 @@
       <button class="menu-btn" type="button" aria-label="Open navigation menu" aria-expanded="false"><i class="fas fa-bars"></i></button>
       <div class="nav-links"><a href="{{ url_for('main.index') }}">Home</a><a href="{{ url_for('main.inventory') }}">Inventory</a><a href="{{ url_for('main.about') }}">About</a><a href="{{ url_for('main.services') }}">Services</a><a href="{{ url_for('main.contact') }}">Contact</a><a class="nav-admin" href="{{ url_for('admin.login') }}">Admin Login</a></div>
     </div></nav>
-    {% with messages=get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-wrap">{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}<button>&times;</button></div>{% endfor %}</div>{% endif %}{% endwith %}
+    {% with messages=get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-wrap" aria-live="polite" aria-atomic="true">
+        {% for category,message in messages %}
+          <div class="flash {{ category }}" role="alert">
+            <span class="flash-icon" aria-hidden="true">
+              {% if category == 'success' %}
+                <i class="fas fa-circle-check"></i>
+              {% elif category in ['danger', 'error'] %}
+                <i class="fas fa-circle-exclamation"></i>
+              {% else %}
+                <i class="fas fa-circle-info"></i>
+              {% endif %}
+            </span>
+            <div class="flash-content">
+              {% if category == 'success' %}<strong>Success</strong>{% endif %}
+              <span>{{ message }}</span>
+            </div>
+            <button type="button" class="flash-close" aria-label="Close notification">&times;</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
     <main>{% block content %}{% endblock %}</main>
     <footer class="site-footer">
       <div class="container footer-grid">
@@ -38,7 +81,7 @@
           <a class="footer-logo" href="{{ url_for('main.index') }}">
             {% if site_settings.logo %}
             <img
-              src="{{ url_for('static', filename=site_settings.logo) }}"
+              src="{{ media_url(site_settings.logo) }}"
               alt="{{ site_settings.company_name }} logo"
             >
             {% endif %}
@@ -54,10 +97,13 @@
         <div class="footer-column footer-links-column">
           <h4>Explore</h4>
           <nav class="footer-links" aria-label="Footer navigation">
+            <a href="{{ url_for('main.index') }}">Home</a>
             <a href="{{ url_for('main.inventory') }}">Inventory</a>
             <a href="{{ url_for('main.about') }}">About</a>
             <a href="{{ url_for('main.services') }}">Services</a>
             <a href="{{ url_for('main.contact') }}">Contact</a>
+            <a href="{{ url_for('main.privacy') }}">Privacy Policy</a>
+            <a href="{{ url_for('main.terms') }}">Terms &amp; Conditions</a>
           </nav>
         </div>
 

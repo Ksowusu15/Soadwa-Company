@@ -1,0 +1,97 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Testimonials{% endblock %}
+
+{% block content %}
+{% set active_testimonials = testimonials | selectattr('is_active') | list %}
+{% set hidden_count = testimonials|length - active_testimonials|length %}
+{% set rating = namespace(total=0) %}
+{% for item in testimonials %}{% set rating.total = rating.total + item.rating %}{% endfor %}
+
+<div class="page-title-row testimonial-admin-header">
+    <div>
+        <p class="eyebrow">Website Content</p>
+        <h1>Client Testimonials</h1>
+        <p>Curate the client stories that build trust on your homepage.</p>
+    </div>
+    <a href="{{ url_for('admin.add_testimonial') }}" class="btn primary">
+        <i class="fas fa-plus"></i> Add Testimonial
+    </a>
+</div>
+
+<div class="testimonial-stat-grid" aria-label="Testimonial summary">
+    <div class="testimonial-stat-card">
+        <span class="testimonial-stat-icon"><i class="fas fa-quote-left"></i></span>
+        <div><small>Total testimonials</small><strong>{{ testimonials|length }}</strong></div>
+    </div>
+    <div class="testimonial-stat-card">
+        <span class="testimonial-stat-icon"><i class="fas fa-eye"></i></span>
+        <div><small>Visible on website</small><strong>{{ active_testimonials|length }}</strong></div>
+    </div>
+    <div class="testimonial-stat-card">
+        <span class="testimonial-stat-icon"><i class="fas fa-eye-slash"></i></span>
+        <div><small>Hidden</small><strong>{{ hidden_count }}</strong></div>
+    </div>
+    <div class="testimonial-stat-card">
+        <span class="testimonial-stat-icon"><i class="fas fa-star"></i></span>
+        <div><small>Average rating</small><strong>{% if testimonials %}{{ '%.1f'|format(rating.total / testimonials|length) }}{% else %}0.0{% endif %}</strong></div>
+    </div>
+</div>
+
+{% if testimonials %}
+<div class="testimonial-admin-grid">
+    {% for item in testimonials %}
+    <article class="testimonial-manage-card {{ 'is-hidden' if not item.is_active else '' }}">
+        <div class="testimonial-manage-top">
+            <div class="admin-person testimonial-person">
+                {% if item.image %}
+                    <img src="{{ media_url(item.image) }}" alt="{{ item.client_name }}">
+                {% else %}
+                    <span class="admin-avatar testimonial-initial">{{ item.client_name[:1]|upper }}</span>
+                {% endif %}
+                <div>
+                    <strong>{{ item.client_name }}</strong>
+                    <small>{{ item.client_title or 'Valued Client' }}</small>
+                </div>
+            </div>
+            <span class="testimonial-status-badge {{ 'visible' if item.is_active else 'hidden' }}">
+                <i class="fas {{ 'fa-circle-check' if item.is_active else 'fa-circle-minus' }}"></i>
+                {{ 'Visible' if item.is_active else 'Hidden' }}
+            </span>
+        </div>
+
+        <div class="testimonial-manage-rating" aria-label="{{ item.rating }} out of 5 stars">
+            {% for star in range(1, 6) %}<i class="{{ 'fas' if star <= item.rating else 'far' }} fa-star"></i>{% endfor %}
+            <span>{{ item.rating }}/5</span>
+        </div>
+
+        <blockquote>{{ item.testimonial }}</blockquote>
+
+        <div class="testimonial-manage-footer">
+            <span class="testimonial-order"><i class="fas fa-arrow-down-1-9"></i> Order {{ item.display_order }}</span>
+            <div class="testimonial-card-actions">
+                <a href="{{ url_for('admin.edit_testimonial', testimonial_id=item.id) }}" class="icon-btn" title="Edit testimonial" aria-label="Edit {{ item.client_name }} testimonial"><i class="fas fa-pen"></i></a>
+                <form method="POST" action="{{ url_for('admin.toggle_testimonial', testimonial_id=item.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="icon-btn" type="submit" title="{{ 'Hide' if item.is_active else 'Show' }} testimonial" aria-label="{{ 'Hide' if item.is_active else 'Show' }} {{ item.client_name }} testimonial"><i class="fas {{ 'fa-eye-slash' if item.is_active else 'fa-eye' }}"></i></button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.delete_testimonial', testimonial_id=item.id) }}" onsubmit="return confirm('Delete this testimonial?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="icon-btn danger" type="submit" title="Delete testimonial" aria-label="Delete {{ item.client_name }} testimonial"><i class="fas fa-trash"></i></button>
+                </form>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="admin-card">
+    <div class="empty-admin-state testimonial-empty-state">
+        <i class="fas fa-comments"></i>
+        <h2>No testimonials yet</h2>
+        <p>Add your first client story and it can appear automatically in the homepage testimonial showcase.</p>
+        <a href="{{ url_for('admin.add_testimonial') }}" class="btn primary">Add First Testimonial</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
